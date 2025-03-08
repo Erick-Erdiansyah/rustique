@@ -81,20 +81,30 @@ impl<T: Write> Interpreter<T> {
                         self._call_function(name, &params)?;
                     }
                     Lexeme::Var => {
-                        if let (Some(name), Some(value_str)) = (words.next(), words.next()) {
-                            if let Ok(value) = value_str.parse() {
-                                self.variables.insert(name.to_owned(), value);
+                        if let Some(name) = words.next() {
+                            if let Some(equal) = words.next() {
+                                if equal != "=" {
+                                    return Err(io::Error::new(
+                                        io::ErrorKind::InvalidInput,
+                                        "Expected '=' before string value",
+                                    ));
+                                }
+                                if let Some(value_str) = words.next() {
+                                    if let Ok(value) = value_str.parse() {
+                                        self.variables.insert(name.to_owned(), value);
+                                    } else {
+                                        return Err(io::Error::new(
+                                            io::ErrorKind::InvalidInput,
+                                            "Invalid number format",
+                                        ));
+                                    }
+                                }
                             } else {
                                 return Err(io::Error::new(
-                                    io::ErrorKind::InvalidInput,
-                                    "Invalid number format",
+                                    io::ErrorKind::UnexpectedEof,
+                                    "Missing variable name or value",
                                 ));
                             }
-                        } else {
-                            return Err(io::Error::new(
-                                io::ErrorKind::UnexpectedEof,
-                                "Missing variable name or value",
-                            ));
                         }
                     }
                     Lexeme::Array => {
@@ -109,11 +119,11 @@ impl<T: Write> Interpreter<T> {
                     }
                     Lexeme::String => {
                         if let Some(name) = words.next() {
-                            if let Some(colon) = words.next() {
-                                if colon != "=" {
+                            if let Some(equal) = words.next() {
+                                if equal != "=" {
                                     return Err(io::Error::new(
                                         io::ErrorKind::InvalidInput,
-                                        "Expected ':' before string value",
+                                        "Expected '=' before string value",
                                     ));
                                 }
                                 let rest_of_line: String = words.collect::<Vec<_>>().join(" ");
@@ -143,7 +153,7 @@ impl<T: Write> Interpreter<T> {
                             } else {
                                 return Err(io::Error::new(
                                     io::ErrorKind::UnexpectedEof,
-                                    "Expected ':' after variable name",
+                                    "Expected '=' after variable name",
                                 ));
                             }
                         } else {
