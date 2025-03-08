@@ -108,17 +108,50 @@ impl<T: Write> Interpreter<T> {
                         self.arrays.insert(name.to_owned(), array);
                     }
                     Lexeme::String => {
-                        let name = source.next().unwrap();
-                        let mut value = String::new();
-                        while let Some(word) = source.next() {
-                            if word == "endstring" {
-                                break;
+                        if let Some(name) = words.next() {
+                            if let Some(colon) = words.next() {
+                                if colon != "=" {
+                                    return Err(io::Error::new(
+                                        io::ErrorKind::InvalidInput,
+                                        "Expected ':' before string value",
+                                    ));
+                                }
+                                let rest_of_line: String = words.collect::<Vec<_>>().join(" ");
+                                if let Some(start_index) = rest_of_line.find('"') {
+                                    if let Some(end_index) = rest_of_line.rfind('"') {
+                                        if start_index != end_index {
+                                            let value = &rest_of_line[start_index + 1..end_index];
+                                            self.strings.insert(name.to_owned(), value.to_string());
+                                        } else {
+                                            return Err(io::Error::new(
+                                                io::ErrorKind::InvalidInput,
+                                                "String missing closing quote",
+                                            ));
+                                        }
+                                    } else {
+                                        return Err(io::Error::new(
+                                            io::ErrorKind::InvalidInput,
+                                            "String missing closing quote",
+                                        ));
+                                    }
+                                } else {
+                                    return Err(io::Error::new(
+                                        io::ErrorKind::InvalidInput,
+                                        "String missing opening quote",
+                                    ));
+                                }
+                            } else {
+                                return Err(io::Error::new(
+                                    io::ErrorKind::UnexpectedEof,
+                                    "Expected ':' after variable name",
+                                ));
                             }
-                            value.push_str(word);
-                            value.push(' ');
+                        } else {
+                            return Err(io::Error::new(
+                                io::ErrorKind::UnexpectedEof,
+                                "Expected variable name after string declaration",
+                            ));
                         }
-                        value.pop();
-                        self.strings.insert(name.to_owned(), value);
                     }
                     Lexeme::Float => {
                         let name = source.next().unwrap();
