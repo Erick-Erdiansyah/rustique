@@ -82,6 +82,14 @@ impl<T: Write> Interpreter<T> {
                                                 "Invalid Value",
                                             )),
                                         },
+                                        "bool" => match value_str {
+                                            "true" => Ok(Value::Bool(true)),
+                                            "false" => Ok(Value::Bool(false)),
+                                            _ => Err(io::Error::new(
+                                                io::ErrorKind::InvalidInput,
+                                                "Invalid boolean value",
+                                            )),
+                                        },
                                         "string" => {
                                             if value_str.starts_with('"')
                                                 && value_str.ends_with('"')
@@ -93,6 +101,53 @@ impl<T: Write> Interpreter<T> {
                                                 Err(io::Error::new(
                                                     io::ErrorKind::InvalidInput,
                                                     "String must be enclosed in double quotes",
+                                                ))
+                                            }
+                                        }
+                                        "array" => {
+                                            if value_str.starts_with('[')
+                                                && value_str.ends_with(']')
+                                            {
+                                                let elements: Result<Vec<Value>> = value_str
+                                                    .trim_matches(|c| c == '[' || c == ']')
+                                                    .split(',')
+                                                    .map(|s| {
+                                                        let s = s.trim();
+                                                        s.parse::<i32>()
+                                                            .map(Value::Int)
+                                                            .or_else(|_| {
+                                                                s.parse::<f32>().map(Value::Float)
+                                                            })
+                                                            .or_else(|_| match s {
+                                                                "true" => Ok(Value::Bool(true)),
+                                                                "false" => Ok(Value::Bool(false)),
+                                                                _ if s.starts_with('"')
+                                                                    && s.ends_with('"') =>
+                                                                {
+                                                                    Ok(Value::Str(
+                                                                        s.trim_matches('"')
+                                                                            .to_string(),
+                                                                    ))
+                                                                }
+                                                                _ => Err(io::Error::new(
+                                                                    io::ErrorKind::InvalidInput,
+                                                                    "Invalid array element",
+                                                                )),
+                                                            })
+                                                    })
+                                                    .collect();
+
+                                                match elements {
+                                                    Ok(arr) => Ok(Value::Array(arr)),
+                                                    Err(_) => Err(io::Error::new(
+                                                        io::ErrorKind::InvalidInput,
+                                                        "Invalid array value",
+                                                    )),
+                                                }
+                                            } else {
+                                                Err(io::Error::new(
+                                                    io::ErrorKind::InvalidInput,
+                                                    "Array must be enclosed in []",
                                                 ))
                                             }
                                         }
@@ -129,6 +184,20 @@ impl<T: Write> Interpreter<T> {
                                     Value::Int(v) => writeln!(self.output_stream, "{}", v)?,
                                     Value::Float(v) => writeln!(self.output_stream, "{}", v)?,
                                     Value::Str(v) => writeln!(self.output_stream, "{}", v)?,
+                                    Value::Bool(v) => writeln!(self.output_stream, "{}", v)?,
+                                    Value::Array(arr) => {
+                                        let elements: Vec<String> = arr
+                                            .iter()
+                                            .map(|v| match v {
+                                                Value::Int(n) => n.to_string(),
+                                                Value::Str(n) => n.to_string(),
+                                                Value::Float(n) => n.to_string(),
+                                                Value::Bool(n) => n.to_string(),
+                                                _ => "unsupported for now".to_string(),
+                                            })
+                                            .collect();
+                                        writeln!(self.output_stream, "[{}]", elements.join(","))?;
+                                    }
                                 }
                             } else {
                                 return Err(io::Error::new(
