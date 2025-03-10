@@ -8,9 +8,7 @@ pub enum Lexeme {
     Mul,
     Div,
     Loop,
-    String,
     Sqrt,
-    Float,
     Function,
     Call,
     Struct,
@@ -35,9 +33,7 @@ impl Lexeme {
             "mul" => Lexeme::Mul,
             "div" => Lexeme::Div,
             "loop" => Lexeme::Loop,
-            "string" => Lexeme::String,
             "sqrt" => Lexeme::Sqrt,
-            "float" => Lexeme::Float,
             "function" => Lexeme::Function,
             "call" => Lexeme::Call,
             "struct" => Lexeme::Struct,
@@ -81,5 +77,5 @@ pub enum Value {
     Float(f32),
     Str(String),
     Bool(bool),
-    Array(Vec<Value>)
+    Array(Vec<Value>),
 }

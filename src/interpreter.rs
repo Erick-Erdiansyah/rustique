@@ -59,12 +59,12 @@ impl<T: Write> Interpreter<T> {
                                         "Expected '='",
                                     ));
                                 }
-                                let value_str = words.collect::<Vec<_>>().join(" "); // Join remaining tokens
+                                let value_str = words.collect::<Vec<_>>().join(" ");
 
                                 if let Some((name, var_type)) = name_type.split_once(':') {
                                     let name = name.trim();
                                     let var_type = var_type.trim();
-                                    let value_str = value_str.trim(); // Ensure we trim the value as well
+                                    let value_str = value_str.trim();
 
                                     // Parse value based on type
                                     let value = match var_type {
@@ -193,7 +193,7 @@ impl<T: Write> Interpreter<T> {
                                                 Value::Str(n) => n.to_string(),
                                                 Value::Float(n) => n.to_string(),
                                                 Value::Bool(n) => n.to_string(),
-                                                _ => "unsupported for now".to_string(),
+                                                _ => "unsupported".to_string(),
                                             })
                                             .collect();
                                         writeln!(self.output_stream, "[{}]", elements.join(","))?;
