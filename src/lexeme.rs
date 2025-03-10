@@ -7,17 +7,13 @@ pub enum Lexeme {
     Sub,
     Mul,
     Div,
-    End,
     Loop,
-    Array,
     String,
-    Endstring,
     Sqrt,
     Float,
     Function,
     Call,
     Struct,
-    Endstruct,
     AddF,
     SubF,
     MulF,
@@ -38,17 +34,13 @@ impl Lexeme {
             "sub" => Lexeme::Sub,
             "mul" => Lexeme::Mul,
             "div" => Lexeme::Div,
-            "end" => Lexeme::End,
             "loop" => Lexeme::Loop,
-            "array" => Lexeme::Array,
             "string" => Lexeme::String,
-            "endstring" => Lexeme::Endstring,
             "sqrt" => Lexeme::Sqrt,
             "float" => Lexeme::Float,
             "function" => Lexeme::Function,
             "call" => Lexeme::Call,
             "struct" => Lexeme::Struct,
-            "endstruct" => Lexeme::Endstruct,
             "add_f" => Lexeme::AddF,
             "sub_f" => Lexeme::SubF,
             "mul_f" => Lexeme::MulF,
@@ -82,4 +74,10 @@ impl Comparison {
             _ => panic!("Invalid comparison operator: {}", s),
         }
     }
+}
+
+pub enum Value {
+    Int(i32),
+    Float(f32),
+    Str(String),
 }
