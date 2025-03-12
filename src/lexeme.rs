@@ -7,7 +7,7 @@ pub enum Lexeme {
     Sub,
     Mul,
     Div,
-    Loop,
+    For,
     Sqrt,
     Function,
     Call,
@@ -19,6 +19,8 @@ pub enum Lexeme {
     ABS,
     POW,
     Switch,
+    Inc,
+    Dec
 }
 
 impl Lexeme {
@@ -32,9 +34,9 @@ impl Lexeme {
             "sub" => Lexeme::Sub,
             "mul" => Lexeme::Mul,
             "div" => Lexeme::Div,
-            "loop" => Lexeme::Loop,
+            "for" => Lexeme::For,
             "sqrt" => Lexeme::Sqrt,
-            "function" => Lexeme::Function,
+            "fn" => Lexeme::Function,
             "call" => Lexeme::Call,
             "struct" => Lexeme::Struct,
             "add_f" => Lexeme::AddF,
@@ -44,6 +46,8 @@ impl Lexeme {
             "abs" => Lexeme::ABS,
             "pow" => Lexeme::POW,
             "switch" => Lexeme::Switch,
+            "++" => Lexeme::Inc,
+            "--" => Lexeme::Dec,
             _ => panic!("Invalid lexeme: {}", s),
         }
     }
@@ -59,7 +63,7 @@ pub enum Comparison {
 }
 
 impl Comparison {
-    pub fn from_str(s: &str) -> Self {
+    pub fn _from_str(s: &str) -> Self {
         match s {
             "==" => Comparison::Equal,
             "!=" => Comparison::NotEqual,
@@ -72,6 +76,7 @@ impl Comparison {
     }
 }
 
+#[derive(Debug,PartialEq, PartialOrd)]
 pub enum Value {
     Int(i32),
     Float(f32),
