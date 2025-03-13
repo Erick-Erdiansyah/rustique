@@ -19,8 +19,6 @@ pub enum Lexeme {
     ABS,
     POW,
     Switch,
-    Inc,
-    Dec
 }
 
 impl Lexeme {
@@ -46,13 +44,12 @@ impl Lexeme {
             "abs" => Lexeme::ABS,
             "pow" => Lexeme::POW,
             "switch" => Lexeme::Switch,
-            "++" => Lexeme::Inc,
-            "--" => Lexeme::Dec,
             _ => panic!("Invalid lexeme: {}", s),
         }
     }
 }
 
+#[derive(Debug,PartialEq, PartialOrd)]
 pub enum Comparison {
     Equal,
     NotEqual,
@@ -63,7 +60,7 @@ pub enum Comparison {
 }
 
 impl Comparison {
-    pub fn _from_str(s: &str) -> Self {
+    pub fn from_str(s: &str) -> Self {
         match s {
             "==" => Comparison::Equal,
             "!=" => Comparison::NotEqual,

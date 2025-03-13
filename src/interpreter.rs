@@ -40,23 +40,6 @@ impl<T: Write> Interpreter<T> {
         while let Some(line) = source.next() {
             let mut words = line.trim().split_whitespace();
             if let Some(word) = words.next() {
-                // Check if the word ends with "++" or "--" and separate it
-                if word.ends_with("++") {
-                    let var_name = &word[..word.len() - 2]; // Extract "test" from "test++"
-                    if let Some(Value::Int(v)) = self.variables.get_mut(var_name) {
-                        *v += 1; // ✅ Directly increment variable
-                        println!("DEBUG: {} incremented to {}", var_name, v); // Debugging
-                    } else {
-                        return Err(io::Error::new(
-                            io::ErrorKind::InvalidInput,
-                            format!(
-                                "Increment (++) not supported for {:?}",
-                                self.variables.get(var_name)
-                            ),
-                        ));
-                    }
-                    return Ok(self.output_stream.by_ref()); // ✅ Stop execution here, no recursion
-                }
                 let keyword = Lexeme::from_str(word);
                 match keyword {
                     Lexeme::Var => {
@@ -216,129 +199,142 @@ impl<T: Write> Interpreter<T> {
                             }
                         }
                     }
-                    Lexeme::Inc => {
-                        if let Some(var_name) = words.next() {
-                            if let Some(Value::Int(v)) = self.variables.get_mut(var_name) {
-                                *v += 1; // Increment the value
-                            } else {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidInput,
-                                    format!(
-                                        "Increment (++) not supported for {:?}",
-                                        self.variables.get(var_name)
-                                    ),
-                                ));
-                            }
-                        } else {
-                            return Err(io::Error::new(
-                                io::ErrorKind::InvalidInput,
-                                "Expected a variable after ++",
-                            ));
-                        }
-                    }
-                    Lexeme::Dec => {
-                        if let Some(var_name) = words.next() {
-                            if let Some(Value::Int(v)) = self.variables.get_mut(var_name) {
-                                *v -= 1; // Decrement the value
-                            } else {
-                                return Err(io::Error::new(
-                                    io::ErrorKind::InvalidInput,
-                                    format!(
-                                        "Decrement (--) not supported for {:?}",
-                                        self.variables.get(var_name)
-                                    ),
-                                ));
-                            }
-                        } else {
-                            return Err(io::Error::new(
-                                io::ErrorKind::InvalidInput,
-                                "Expected a variable after --",
-                            ));
-                        }
-                    }
                     Lexeme::For => {
-                        // Extract and clean loop variable
-                        let name = words
-                            .next()
-                            .ok_or(io::Error::new(
-                                io::ErrorKind::InvalidInput,
-                                "Expected variable in loop condition",
-                            ))?
-                            .trim_start_matches('(');
-
-                        // Extract comparison operator and value
-                        let comp = words.next().ok_or(io::Error::new(
+                        let var_name = words.next().ok_or(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "Expected loop variable",
+                        ))?;
+                        let comp_str = words.next().ok_or(io::Error::new(
                             io::ErrorKind::InvalidInput,
                             "Expected comparison operator",
                         ))?;
-                        let value = words
-                            .next()
-                            .ok_or(io::Error::new(
-                                io::ErrorKind::InvalidInput,
-                                "Expected comparison value",
-                            ))?
-                            .trim_end_matches(')')
-                            .parse::<i32>()
-                            .map_err(|_| {
-                                io::Error::new(io::ErrorKind::InvalidInput, "Invalid integer value")
-                            })?;
+                        let value_str = words.next().ok_or(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "Expected comparison value",
+                        ))?;
+                        let increment_var = words.next().ok_or(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "Expected increment variable",
+                        ))?;
+                        let increment_op = words.next().ok_or(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "Expected increment operation",
+                        ))?;
+                        let increment_value_str = words.next().ok_or(io::Error::new(
+                            io::ErrorKind::InvalidInput,
+                            "Expected increment value",
+                        ))?;
 
-                        // Ensure the loop variable exists
-                        if !self.variables.contains_key(name) {
+                        let comp = Comparison::from_str(comp_str);
+                        let value = value_str.parse::<i32>().map_err(|_| {
+                            io::Error::new(
+                                io::ErrorKind::InvalidInput,
+                                "Invalid loop condition value",
+                            )
+                        })?;
+                        let increment_value = increment_value_str.parse::<i32>().map_err(|_| {
+                            io::Error::new(io::ErrorKind::InvalidInput, "Invalid increment value")
+                        })?;
+
+                        // Ensure variable exists
+                        if !self.variables.contains_key(var_name) {
                             return Err(io::Error::new(
                                 io::ErrorKind::NotFound,
-                                format!("Variable '{}' not found", name),
+                                format!("Variable '{}' not defined", var_name),
                             ));
                         }
 
-                        let comp = Comparison::_from_str(comp); // Convert comparison operator to enum
+                        // Debug: Print initial variable state
+                        println!(
+                            "DEBUG: Loop Variable '{}' = {:?}",
+                            var_name,
+                            self.variables.get(var_name)
+                        );
 
-                        // Collect loop body
-                        let mut loop_body = Vec::new();
-                        while let Some(line) = source.next() {
-                            let trimmed = line.trim();
-                            if trimmed == "}" {
-                                break; // Stop at closing brace
-                            }
-                            loop_body.push(trimmed.to_string());
+                        // Step 1: Read `{` properly
+                        let mut loop_body: Vec<String> = Vec::new();
+                        let mut brace_count = 0;
+
+                        // If `{` is already on the same line as `for`
+                        if words.clone().any(|w| w == "{") {
+                            brace_count = 1;
                         }
 
-                        // Execute loop
-                        loop {
-                            // Check condition before executing body
-                            if let Some(Value::Int(var_value)) = self.variables.get(name) {
-                                if !match comp {
-                                    Comparison::Equal => var_value == &value,
-                                    Comparison::NotEqual => var_value != &value,
-                                    Comparison::LessThan => var_value < &value,
-                                    Comparison::LessThanOrEqual => var_value <= &value,
-                                    Comparison::GreaterThan => var_value > &value,
-                                    Comparison::GreaterThanOrEqual => var_value >= &value,
-                                } {
-                                    break; // Stop loop when condition fails
+                        // Step 2: Read the loop body correctly
+                        while let Some(token) = source.next() {
+                            let trimmed = token.trim();
+
+                            if trimmed == "{" {
+                                brace_count += 1;
+                                continue;
+                            }
+
+                            if trimmed == "}" {
+                                brace_count -= 1;
+                                if brace_count == 0 {
+                                    break;
                                 }
+                            }
+
+                            if brace_count > 0 {
+                                loop_body.push(trimmed.to_string());
+                            }
+                        }
+
+                        // Debug: Print loop body
+                        println!("DEBUG: Fixed Captured Loop Body -> {:?}", loop_body);
+
+                        // Execute the loop
+                        while match self.variables.get(var_name) {
+                            Some(Value::Int(var)) => match comp {
+                                Comparison::Equal => *var == value,
+                                Comparison::NotEqual => *var != value,
+                                Comparison::LessThan => *var < value,
+                                Comparison::LessThanOrEqual => *var <= value,
+                                Comparison::GreaterThan => *var > value,
+                                Comparison::GreaterThanOrEqual => *var >= value,
+                            },
+                            _ => {
+                                println!(
+                                    "DEBUG: Loop condition failed (Variable not found or invalid type)"
+                                );
+                                false
+                            }
+                        } {
+                            println!(
+                                "DEBUG: Loop Iteration Started for '{}' = {:?}",
+                                var_name,
+                                self.variables.get(var_name)
+                            );
+
+                            for statement in &loop_body {
+                                println!("DEBUG: Running -> {}", statement);
+                                self.run(statement)?;
+                            }
+
+                            // Increment the loop variable
+                            if let Some(Value::Int(v)) = self.variables.get_mut(increment_var) {
+                                match increment_op {
+                                    "+=" => *v += increment_value,
+                                    "-=" => *v -= increment_value,
+                                    "*=" => *v *= increment_value,
+                                    "/=" => *v /= increment_value,
+                                    _ => {
+                                        return Err(io::Error::new(
+                                            io::ErrorKind::InvalidInput,
+                                            "Invalid increment operation",
+                                        ));
+                                    }
+                                }
+                                println!("DEBUG: {} updated to {}", increment_var, v);
                             } else {
                                 return Err(io::Error::new(
                                     io::ErrorKind::InvalidInput,
-                                    format!("Variable '{}' is not an integer", name),
+                                    "Invalid increment variable",
                                 ));
                             }
-
-                            // Execute loop body
-                            for line in &loop_body {
-                                self.run(line)?; // Execute each statement
-                            }
-
-                            // Only increment if there is no explicit ++ inside the loop body
-                            if !loop_body
-                                .iter()
-                                .any(|line| line.contains(&format!("{}++", name)))
-                            {
-                                if let Some(Value::Int(v)) = self.variables.get_mut(name) {
-                                    *v += 1;
-                                }
-                            }
                         }
+                        println!("DEBUG: Loop Exited");
                     }
                     _ => {} // Handle other lexemes
                 }
