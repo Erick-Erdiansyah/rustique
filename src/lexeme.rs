@@ -1,83 +1,67 @@
-pub enum Lexeme {
-    Var,
-    Print,
-    If,
-    Else,
-    Add,
-    Sub,
-    Mul,
-    Div,
-    For,
-    Sqrt,
-    Function,
-    Call,
-    Struct,
-    AddF,
-    SubF,
-    MulF,
-    DivF,
-    ABS,
-    POW,
-    Switch,
-}
+use std::collections::HashMap;
 
-impl Lexeme {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "var" => Lexeme::Var,
-            "print" => Lexeme::Print,
-            "if" => Lexeme::If,
-            "else" => Lexeme::Else,
-            "add" => Lexeme::Add,
-            "sub" => Lexeme::Sub,
-            "mul" => Lexeme::Mul,
-            "div" => Lexeme::Div,
-            "for" => Lexeme::For,
-            "sqrt" => Lexeme::Sqrt,
-            "fn" => Lexeme::Function,
-            "call" => Lexeme::Call,
-            "struct" => Lexeme::Struct,
-            "add_f" => Lexeme::AddF,
-            "sub_f" => Lexeme::SubF,
-            "mul_f" => Lexeme::MulF,
-            "div_f" => Lexeme::DivF,
-            "abs" => Lexeme::ABS,
-            "pow" => Lexeme::POW,
-            "switch" => Lexeme::Switch,
-            _ => panic!("Invalid lexeme: {}", s),
-        }
-    }
-}
-
-#[derive(Debug,PartialEq, PartialOrd)]
-pub enum Comparison {
-    Equal,
-    NotEqual,
-    LessThan,
-    LessThanOrEqual,
-    GreaterThan,
-    GreaterThanOrEqual,
-}
-
-impl Comparison {
-    pub fn from_str(s: &str) -> Self {
-        match s {
-            "==" => Comparison::Equal,
-            "!=" => Comparison::NotEqual,
-            "<" => Comparison::LessThan,
-            "<=" => Comparison::LessThanOrEqual,
-            ">" => Comparison::GreaterThan,
-            ">=" => Comparison::GreaterThanOrEqual,
-            _ => panic!("Invalid comparison operator: {}", s),
-        }
-    }
-}
-
-#[derive(Debug,PartialEq, PartialOrd)]
+#[derive(Debug, Clone)]
 pub enum Value {
-    Int(i32),
-    Float(f32),
+    Int(i64),
+    Float(f64),
     Str(String),
     Bool(bool),
-    Array(Vec<Value>),
+}
+
+#[derive(Debug, Clone)]
+pub enum Expr {
+    Literal(Value),
+    Variable(String),
+    BinaryOp(Box<Expr>, String, Box<Expr>),  // left, operator, right
+}
+
+
+#[derive(Debug, Clone)]
+pub enum Statement {
+    VarDecl(Variable),
+    Print(String),
+    ForLoop {
+        var_name: String,
+        start: i64,
+        end: i64,
+        body: Vec<Statement>,
+    },
+    While {
+        condition: Expr,
+        body: Vec<Statement>,
+    },
+    Function {
+        name: String,
+        parameters: Vec<String>,
+        body: Vec<Statement>,
+    },
+    FunctionCall {
+        name: String,
+        arguments: Vec<Expr>,
+    },
+    Assignment {
+        name: String,
+        expr: Expr,
+    },
+    Return(Expr),
+}
+
+#[derive(Debug, Clone)]
+pub struct Variable {
+    pub name: String,
+    pub type_annotation: String, // "int", "float" dll
+    pub value: Value,
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionDef {
+    pub parameters: Vec<String>,
+    pub body: Vec<Statement>,
+}
+
+pub struct Interpreter {
+    // A stack of scopes; the last is the current environment.
+    pub scopes: Vec<HashMap<String, Value>>,
+    // Function definitions.
+    pub functions: HashMap<String, FunctionDef>,
 }
