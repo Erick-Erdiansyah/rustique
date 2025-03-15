@@ -3,9 +3,12 @@ use crate::lexeme::*;
 peg::parser! {
   pub grammar interpreter_parser() for str {
       // Skip whitespace.
-      rule _() = [' ' | '\t' | '\n' | '\r']*
+      rule _() = ([' ' | '\t' | '\n' | '\r'] / comment())* { () }
 
-      // Parse an identifier.
+      // Single-line comment: matches '//' then any characters until a newline.
+      rule comment() -> () = ("//" (!"\n" [_])* (("\n") / ![_])) { () } / ("/*" (!"*/" [_])* "*/") { () }
+
+            // Parse an identifier.
       rule identifier() -> &'input str
           = s:$(['a'..='z'|'A'..='Z'] ['a'..='z'|'A'..='Z'|'0'..='9'|'_']*) { s }
           / expected!("identifier")
