@@ -5,7 +5,7 @@ peg::parser! {
       // Skip whitespace.
       rule _() = ([' ' | '\t' | '\n' | '\r'] / comment())* { () }
 
-      // Single-line comment: matches '//' then any characters until a newline.
+      // Single-line comment: matches '//' then any characters until a newline. and '/*comment*/' for multi-line comment
       rule comment() -> () = ("//" (!"\n" [_])* (("\n") / ![_])) { () } / ("/*" (!"*/" [_])* "*/") { () }
 
             // Parse an identifier.
@@ -16,6 +16,26 @@ peg::parser! {
       // Parse an integer.
       rule int_value() -> i64
           = n:$(['0'..='9']+) { n.parse().unwrap() }
+
+      // parse float
+      rule float_value()-> f64
+          = n:$((['0'..='9'] + "." ['0'..='9']+)) {n.parse().unwrap()}
+
+      // parse string simple
+      rule string_value()-> &'input str
+          = "\"" s:$((!"\"" [_])*) "\"" { s }
+
+      // Parse a boolean
+      rule bool_value() -> bool
+          = "true" { true } / "false" { false }
+
+      rule value() -> Value
+      = v:(
+            n:float_value() { Value::Float(n) }
+          / n:int_value() { Value::Int(n) }
+          / s:string_value() { Value::Str(s.to_string()) }
+          / b:bool_value()  { Value::Bool(b) }
+        ) { v }
 
       // Parse a boolean literal.
       rule bool_literal() -> Expr
@@ -52,12 +72,12 @@ peg::parser! {
 
       // Parse a variable declaration: "var <id>:<type> = <int>;"
       rule var_decl() -> Statement
-          = "var" _ id:identifier() _ ":" _ typ:identifier() _ "=" _ val:int_value() _ ";" {
+          = "var" _ id:identifier() _ ":" _ typ:identifier() _ "=" _ val:value() _ ";" {
               Statement::VarDecl({
                   Variable {
                       name: id.to_string(),
                       type_annotation: typ.to_string(),
-                      value: Value::Int(val),
+                      value: val,
                   }
               })
           }
