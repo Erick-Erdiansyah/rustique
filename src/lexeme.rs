@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Value {
     Int(i64),
     Float(f64),
@@ -8,15 +8,14 @@ pub enum Value {
     Bool(bool),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Expr {
     Literal(Value),
     Variable(String),
-    BinaryOp(Box<Expr>, String, Box<Expr>),  // left, operator, right
+    BinaryOp(Box<Expr>, String, Box<Expr>), // left, operator, right
 }
 
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum Statement {
     VarDecl(Variable),
     Print(String),
@@ -46,14 +45,14 @@ pub enum Statement {
     Return(Expr),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Variable {
     pub name: String,
     pub type_annotation: String, // "int", "float" dll
     pub value: Value,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct FunctionDef {
     pub parameters: Vec<String>,
     pub body: Vec<Statement>,

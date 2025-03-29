@@ -84,7 +84,7 @@ impl Interpreter {
             }
             Statement::Print(var_name) => {
                 if let Some(val) = self.get_var(var_name) {
-                    println!("{:?}", val);
+                    println!("{}", val);
                 } else {
                     println!("Variable '{}' not found!", var_name);
                 }
@@ -167,8 +167,21 @@ impl Interpreter {
     fn eval_program(&mut self, stmts: &[Statement]) {
         for stmt in stmts {
             if let Some(ret_val) = self.eval_statement(stmt) {
-                println!("Returned: {:?}", ret_val);
+                println!("Returned: {}", ret_val);
             }
+        }
+    }
+}
+
+
+// format display for printed value(remove the debug)
+impl std::fmt::Display for Value {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Value::Int(n) => write!(f, "{}", n),
+            Value::Str(s) => write!(f, "{}", s),
+            Value::Float(n) => write!(f, "{}", n),
+            Value::Bool(b) => write!(f, "{}", b),
         }
     }
 }
