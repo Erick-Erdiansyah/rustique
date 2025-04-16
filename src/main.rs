@@ -1,8 +1,5 @@
-use interpreter::run;
-
-pub mod parser;
-pub mod lexeme;
-pub mod interpreter;
+mod  int;
+use int::interpreter::run;
 
 fn main() {
    run();

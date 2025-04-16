@@ -3,8 +3,8 @@ use std::env;
 use std::fs;
 use std::process;
 
-use crate::lexeme::*;
-use crate::parser::interpreter_parser;
+use crate::int::lexeme::*;
+use crate::int::parser::interpreter_parser;
 
 impl Interpreter {
     fn new() -> Self {
@@ -172,7 +172,6 @@ impl Interpreter {
         }
     }
 }
-
 
 // format display for printed value(remove the debug)
 impl std::fmt::Display for Value {

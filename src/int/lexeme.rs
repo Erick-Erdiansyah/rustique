@@ -48,7 +48,7 @@ pub enum Statement {
 #[derive(Clone)]
 pub struct Variable {
     pub name: String,
-    pub type_annotation: String, // "int", "float" dll
+    pub _type_annotation: String, // "int", "float" dll
     pub value: Value,
 }
 

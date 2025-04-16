@@ -1,4 +1,4 @@
-use crate::lexeme::*;
+use crate::int::lexeme::*;
 
 peg::parser! {
   pub grammar interpreter_parser() for str {
@@ -76,7 +76,7 @@ peg::parser! {
               Statement::VarDecl({
                   Variable {
                       name: id.to_string(),
-                      type_annotation: typ.to_string(),
+                      _type_annotation: typ.to_string(),
                       value: val,
                   }
               })
