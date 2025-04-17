@@ -13,5 +13,6 @@ fn main() {
         .insert_resource(CodeInput::default())
         .add_systems(Update, floating_code_editor)
         .add_systems(Update, run_code)
+        .add_systems(Startup, spawn_init_text)
         .run();
 }

@@ -18,11 +18,31 @@ pub fn floating_code_editor(mut contexts: EguiContexts, mut input: ResMut<CodeIn
         });
 }
 
-pub fn run_code(mut input: ResMut<CodeInput>) {
+pub fn spawn_init_text(mut commands: Commands) {
+    commands.spawn(Camera2d);
+    commands.spawn((
+        Text::new("Text - the one"),
+        TextFont {
+            font_size: 30.0,
+            ..Default::default()
+        },
+    ));
+}
+pub fn spawn_text(mut commands: Commands) {
+    commands.spawn((
+        Text::new("Text looooooooooooooooooooooooooooooooooooooooooooong"),
+        TextFont {
+            font_size: 30.0,
+            ..Default::default()
+        },
+    ));
+}
+
+pub fn run_code(mut input: ResMut<CodeInput>, commands: Commands) {
     if input.run_requested {
         println!("Running code : \n {}", input.code);
         if input.code.trim() == "hello" {
-            println!("hello from egui ");
+            spawn_text(commands);
         } else {
             println!("(no-op) you typed : {}", input.code.trim());
         }
