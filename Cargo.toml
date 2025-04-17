@@ -5,3 +5,5 @@ edition = "2024"
 
 [dependencies]
 peg = "*"
+bevy = "*"
+bevy_egui = "*"
