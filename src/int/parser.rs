@@ -90,8 +90,8 @@ peg::parser! {
 
       // Parse a print statement: "print(<id>);"
       rule print_stmt() -> Statement
-          = "print" _ "(" _ id:identifier() _ ")" _ ";" {
-              Statement::Print(id.to_string())
+          = "print" _ "(" _ e:expr() _ ")" _ ";" {
+              Statement::PrintExpr(e)
           }
 
       // Parse a for loop: "for <id> in <int>..<int> { <statements> }"

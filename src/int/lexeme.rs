@@ -18,7 +18,7 @@ pub enum Expr {
 #[derive(Clone)]
 pub enum Statement {
     VarDecl(Variable),
-    Print(String),
+    PrintExpr(Expr),
     ForLoop {
         var_name: String,
         start: i64,

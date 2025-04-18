@@ -1,6 +1,4 @@
 use std::collections::HashMap;
-use std::env;
-use std::fs;
 use std::process;
 
 use crate::int::lexeme::*;
@@ -82,11 +80,11 @@ impl Interpreter {
                 self.set_var(var.name.clone(), var.value.clone());
                 None
             }
-            Statement::Print(var_name) => {
-                if let Some(val) = self.get_var(var_name) {
+            Statement::PrintExpr(expr) => {
+                if let Some(val) = self.eval_expr(expr) {
                     println!("{}", val);
                 } else {
-                    println!("Variable '{}' not found!", var_name);
+                    println!("error evaluating print statement");
                 }
                 None
             }
@@ -185,21 +183,26 @@ impl std::fmt::Display for Value {
     }
 }
 
-pub fn run() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Usage: {} <source_file.jw>", args[0]);
-        process::exit(1);
-    }
-    let filename = &args[1];
-    if !filename.ends_with(".jw") {
-        eprintln!("Error: The file must have a .jw extension.");
-        process::exit(1);
-    }
-    let source = fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("Error reading file {}: {}", filename, err);
-        process::exit(1);
-    });
+pub fn run(source: String) {
+
+    // test run using file with jw extension
+
+    // let args: Vec<String> = env::args().collect();
+    // if args.len() < 2 {
+    //     eprintln!("Usage: {} <source_file.jw>", args[0]);
+    //     process::exit(1);
+    // }
+    // let filename = &args[1];
+    // if !filename.ends_with(".jw") {
+    //     eprintln!("Error: The file must have a .jw extension.");
+    //     process::exit(1);
+    // }
+    // let source = fs::read_to_string(filename).unwrap_or_else(|err| {
+    //     eprintln!("Error reading file {}: {}", filename, err);
+    //     process::exit(1);
+    // });
+
+    // no touch 😡😡😡😡
 
     let stmts = match interpreter_parser::program(&source) {
         Ok(result) => result,

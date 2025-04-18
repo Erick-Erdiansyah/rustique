@@ -1,3 +1,4 @@
+use crate::int::interpreter::run;
 use crate::ui::components::*;
 use bevy::prelude::*;
 use bevy_egui::{EguiContexts, egui};
@@ -28,7 +29,7 @@ pub fn spawn_init_text(mut commands: Commands) {
         },
     ));
 }
-pub fn spawn_text(mut commands: Commands) {
+pub fn _spawn_text(mut commands: Commands) {
     commands.spawn((
         Text::new("Text looooooooooooooooooooooooooooooooooooooooooooong"),
         TextFont {
@@ -38,14 +39,9 @@ pub fn spawn_text(mut commands: Commands) {
     ));
 }
 
-pub fn run_code(mut input: ResMut<CodeInput>, commands: Commands) {
+pub fn run_code(mut input: ResMut<CodeInput>) {
     if input.run_requested {
-        println!("Running code : \n {}", input.code);
-        if input.code.trim() == "hello" {
-            spawn_text(commands);
-        } else {
-            println!("(no-op) you typed : {}", input.code.trim());
-        }
+        run(input.code.clone());
         input.run_requested = false;
     }
 }
