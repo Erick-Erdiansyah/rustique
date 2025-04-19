@@ -3,7 +3,7 @@ use bevy_egui::EguiPlugin;
 
 mod int;
 mod ui;
-use ui::components::CodeInput;
+use ui::resources::{CodeInput, PrintEvent};
 use ui::systems::*;
 
 fn main() {
@@ -11,8 +11,10 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugins(EguiPlugin)
         .insert_resource(CodeInput::default())
+        .add_event::<PrintEvent>()
+        .add_systems(Startup, spawn_camera)
         .add_systems(Update, floating_code_editor)
-        .add_systems(Update, run_code)
-        .add_systems(Startup, spawn_init_text)
+        .add_systems(Update, run_code.before(handle_print_event))
+        .add_systems(Update, handle_print_event)
         .run();
 }

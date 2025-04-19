@@ -22,8 +22,8 @@ peg::parser! {
           = n:$((['0'..='9'] + "." ['0'..='9']+)) {n.parse().unwrap()}
 
       // parse string simple
-      rule string_value()-> &'input str
-          = "\"" s:$((!"\"" [_])*) "\"" { s }
+      rule string_value()-> String
+          = "\"" s:$((!"\"" [_])*) "\"" { s.to_string() }
 
       // Parse a boolean
       rule bool_value() -> bool
@@ -67,8 +67,12 @@ peg::parser! {
           = left:add_expr() _ "<" _ right:rel_expr() { Expr::BinaryOp(Box::new(left), "<".to_string(), Box::new(right)) }
           / add_expr()
 
-      // An expression is a relational expression.
-      rule expr() -> Expr = rel_expr()
+      // A relational expression rule stuff.
+      rule expr() -> Expr
+        = s:string_value() {Expr::Literal(Value::Str(s.to_string()))}
+        / n:int_value() {Expr::Literal(Value::Int(n))}
+        / variable_expr()
+        / rel_expr()
 
       // Parse a variable declaration: "var <id>:<type> = <int>;"
       rule var_decl() -> Statement

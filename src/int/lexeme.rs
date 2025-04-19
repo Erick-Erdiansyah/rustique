@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 #[derive(Clone)]
 pub enum Value {
     Int(i64),
@@ -56,11 +54,4 @@ pub struct Variable {
 pub struct FunctionDef {
     pub parameters: Vec<String>,
     pub body: Vec<Statement>,
-}
-
-pub struct Interpreter {
-    // A stack of scopes; the last is the current environment.
-    pub scopes: Vec<HashMap<String, Value>>,
-    // Function definitions.
-    pub functions: HashMap<String, FunctionDef>,
 }

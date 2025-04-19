@@ -1,8 +1,17 @@
 use std::collections::HashMap;
-use std::process;
+
+use bevy::ecs::event::EventWriter;
 
 use crate::int::lexeme::*;
 use crate::int::parser::interpreter_parser;
+use crate::ui::resources::PrintEvent;
+
+pub struct Interpreter {
+    // A stack of scopes; the last is the current environment.
+    pub scopes: Vec<HashMap<String, Value>>,
+    // Function definitions.
+    pub functions: HashMap<String, FunctionDef>,
+}
 
 impl Interpreter {
     fn new() -> Self {
@@ -55,7 +64,12 @@ impl Interpreter {
     }
 
     // Evaluate a function call.
-    fn eval_function_call(&mut self, func: FunctionDef, arg_values: Vec<Value>) -> Option<Value> {
+    fn eval_function_call(
+        &mut self,
+        func: FunctionDef,
+        arg_values: Vec<Value>,
+        writer: &mut EventWriter<PrintEvent>,
+    ) -> Option<Value> {
         self.push_scope();
         // Bind parameters.
         for (param, arg_val) in func.parameters.iter().zip(arg_values.into_iter()) {
@@ -64,7 +78,7 @@ impl Interpreter {
         // Execute the function body.
         let mut ret_val = None;
         for s in &func.body {
-            if let Some(v) = self.eval_statement(s) {
+            if let Some(v) = self.eval_statement(s, writer) {
                 ret_val = Some(v);
                 break;
             }
@@ -74,7 +88,11 @@ impl Interpreter {
     }
 
     // Evaluate a statement. Returns Some(value) if a return statement is encountered.
-    fn eval_statement(&mut self, stmt: &Statement) -> Option<Value> {
+    fn eval_statement(
+        &mut self,
+        stmt: &Statement,
+        writer: &mut EventWriter<PrintEvent>,
+    ) -> Option<Value> {
         match stmt {
             Statement::VarDecl(var) => {
                 self.set_var(var.name.clone(), var.value.clone());
@@ -82,7 +100,10 @@ impl Interpreter {
             }
             Statement::PrintExpr(expr) => {
                 if let Some(val) = self.eval_expr(expr) {
-                    println!("{}", val);
+                    // send event to bevy
+                    writer.send(PrintEvent {
+                        message: format!("{}", val),
+                    });
                 } else {
                     println!("error evaluating print statement");
                 }
@@ -98,7 +119,7 @@ impl Interpreter {
                     self.push_scope();
                     self.set_var(var_name.clone(), Value::Int(i));
                     for s in body {
-                        if let Some(ret_val) = self.eval_statement(s) {
+                        if let Some(ret_val) = self.eval_statement(s, writer) {
                             self.pop_scope();
                             return Some(ret_val);
                         }
@@ -111,7 +132,7 @@ impl Interpreter {
                 // Continue while condition evaluates to true.
                 while let Some(Value::Bool(true)) = self.eval_expr(condition) {
                     for s in body {
-                        if let Some(ret_val) = self.eval_statement(s) {
+                        if let Some(ret_val) = self.eval_statement(s, writer) {
                             return Some(ret_val);
                         }
                     }
@@ -144,7 +165,7 @@ impl Interpreter {
                     }
                 }
                 if let Some(func) = self.functions.get(name).cloned() {
-                    self.eval_function_call(func, arg_values)
+                    self.eval_function_call(func, arg_values, writer)
                 } else {
                     println!("Function '{}' not found!", name);
                     None
@@ -162,10 +183,12 @@ impl Interpreter {
         }
     }
 
-    fn eval_program(&mut self, stmts: &[Statement]) {
+    fn eval_program(&mut self, stmts: &[Statement], writer: &mut EventWriter<PrintEvent>) {
         for stmt in stmts {
-            if let Some(ret_val) = self.eval_statement(stmt) {
-                println!("Returned: {}", ret_val);
+            if let Some(ret_val) = self.eval_statement(stmt, writer) {
+                writer.send(PrintEvent {
+                    message: format!("Returned : {}", ret_val),
+                });
             }
         }
     }
@@ -183,8 +206,7 @@ impl std::fmt::Display for Value {
     }
 }
 
-pub fn run(source: String) {
-
+pub fn run(source: String, mut writer: EventWriter<PrintEvent>) {
     // test run using file with jw extension
 
     // let args: Vec<String> = env::args().collect();
@@ -207,11 +229,13 @@ pub fn run(source: String) {
     let stmts = match interpreter_parser::program(&source) {
         Ok(result) => result,
         Err(e) => {
-            eprintln!("Parse error: {:?}", e);
-            process::exit(1);
+            writer.send(PrintEvent {
+                message: format!(" parse error : {:?}", e),
+            });
+            return;
         }
     };
 
     let mut interp = Interpreter::new();
-    interp.eval_program(&stmts);
+    interp.eval_program(&stmts, &mut writer);
 }
