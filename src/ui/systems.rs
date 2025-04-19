@@ -42,7 +42,7 @@ pub fn run_code(mut input: ResMut<CodeInput>, writer: EventWriter<PrintEvent>) {
 
 pub fn handle_print_event(mut events: EventReader<PrintEvent>) {
     for ev in events.read() {
-        
+        println!("script output: {}", ev.message);
     }
 }
 
