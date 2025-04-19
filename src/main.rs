@@ -13,8 +13,8 @@ fn main() {
         .insert_resource(CodeInput::default())
         .add_event::<PrintEvent>()
         .add_systems(Startup, spawn_camera)
-        .add_systems(Update, floating_code_editor)
-        .add_systems(Update, run_code.before(handle_print_event))
+        .add_systems(Update, floating_code_editor.after(spawn_camera))
+        .add_systems(Update, run_code)
         .add_systems(Update, handle_print_event)
         .run();
 }

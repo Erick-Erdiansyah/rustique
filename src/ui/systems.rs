@@ -33,42 +33,47 @@ pub fn floating_code_editor(mut contexts: EguiContexts, mut input: ResMut<CodeIn
         });
 }
 
-pub fn run_code(mut input: ResMut<CodeInput>, writer: EventWriter<PrintEvent>) {
+pub fn run_code(
+    mut input: ResMut<CodeInput>,
+    writer: EventWriter<PrintEvent>,
+    mut commands: Commands,
+    text_query: Query<Entity, With<TextUI>>,
+) {
     if input.run_requested {
-        run(input.code.clone(),writer);
+        // despawn all entity before running the code
+        for entity in text_query.iter() {
+            commands.entity(entity).despawn_recursive();
+        }
+        run(input.code.clone(), writer);
         input.run_requested = false;
     }
 }
 
-pub fn handle_print_event(mut events: EventReader<PrintEvent>) {
+pub fn handle_print_event(mut commands: Commands, mut events: EventReader<PrintEvent>) {
     for ev in events.read() {
-        println!("script output: {}", ev.message);
+        spawn_text(&mut commands, ev.message.clone());
     }
 }
 
-pub fn spawn_text(mut commands: Commands, text: String) {
-    let _text_entity = build_text(&mut commands, &text);
-}
-pub fn despawn_text(mut commands: Commands, text_query: Query<Entity, With<TextUI>>) {
-    if let Ok(text_entity) = text_query.get_single() {
-        commands.entity(text_entity).despawn_recursive();
-    }
-}
-pub fn build_text(commands: &mut Commands, text: &String) -> Entity {
-    let build_text = commands
+pub fn spawn_text(commands: &mut Commands, text: impl Into<String>) -> Entity {
+    let text = text.into();
+    commands
         .spawn((sample_ui_style(), TextUI {}))
         .with_children(|parent| {
             parent
                 .spawn((text_sample_ui_style(), BorderRadius::all(Val::Px(10.0))))
                 .with_children(|parent| {
                     parent.spawn((
-                        Text::new(text),
+                        Text::new(&text),
+                        TextFont {
+                            font_size: 32.0,
+                            ..Default::default()
+                        },
                         TextColor::WHITE,
                         TextLayout::new_with_justify(JustifyText::Left),
                         Printedtext {},
                     ));
                 });
         })
-        .id();
-    build_text
+        .id()
 }

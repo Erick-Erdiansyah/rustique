@@ -7,7 +7,7 @@ pub fn sample_ui_style() -> Node {
         align_items: AlignItems::Start,
         row_gap: Val::Px(8.0),
         column_gap: Val::Px(8.0),
-        width: Val::Px(f32::INFINITY),
+        width: Val::Auto,
         height: Val::Px(100.0),
         ..Node::DEFAULT
     }
