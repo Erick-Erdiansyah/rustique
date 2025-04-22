@@ -6,6 +6,8 @@ use crate::int::lexeme::*;
 use crate::int::parser::interpreter_parser;
 use crate::ui::resources::PrintEvent;
 
+use super::native::build_native_fn_table;
+
 pub struct Interpreter {
     // A stack of scopes; the last is the current environment.
     pub scopes: Vec<HashMap<String, Value>>,
@@ -14,11 +16,17 @@ pub struct Interpreter {
 }
 
 impl Interpreter {
-    fn new() -> Self {
-        Interpreter {
+    pub fn new() -> Self {
+        let native_fns = build_native_fn_table();
+        let mut interp = Interpreter {
             scopes: vec![HashMap::new()],
             functions: HashMap::new(),
+        };
+        for (name, func) in native_fns.iter() {
+            println!("Registering native fn: {}", name);
+            interp.set_var(name.clone(), Value::Native(*func));
         }
+        interp
     }
 
     fn push_scope(&mut self) {
@@ -164,6 +172,12 @@ impl Interpreter {
                         return None;
                     }
                 }
+
+                if let Some(Value::Native(func)) = self.get_var(name) {
+                    println!("Calling native fn: {}", name); // debug
+                    return func(arg_values, writer);
+                }
+
                 if let Some(func) = self.functions.get(name).cloned() {
                     self.eval_function_call(func, arg_values, writer)
                 } else {
@@ -202,6 +216,7 @@ impl std::fmt::Display for Value {
             Value::Str(s) => write!(f, "{}", s),
             Value::Float(n) => write!(f, "{}", n),
             Value::Bool(b) => write!(f, "{}", b),
+            Value::Native(_) => write!(f, "[native function]"),
         }
     }
 }

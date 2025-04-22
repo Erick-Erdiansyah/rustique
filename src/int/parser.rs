@@ -10,7 +10,7 @@ peg::parser! {
 
             // Parse an identifier.
       rule identifier() -> &'input str
-          = s:$(['a'..='z'|'A'..='Z'] ['a'..='z'|'A'..='Z'|'0'..='9'|'_']*) { s }
+          = s:$(['a'..='z'|'A'..='Z'] ['a'..='z'|'A'..='Z'|'0'..='9'|'_' | '.']*) { s }
           / expected!("identifier")
 
       // Parse an integer.
