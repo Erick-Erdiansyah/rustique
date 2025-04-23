@@ -3,11 +3,8 @@ use rand::random;
 
 use crate::ui::enemy::enemy_components::*;
 
-pub const NUMBER_OF_ENEMIES: usize = 1;
 pub const ENEMY_SPEED: f32 = 200.0;
 pub const ENEMY_SIZE: f32 = 64.0;
-
-
 
 pub fn spawn_enemies(
     commands: &mut Commands,
@@ -16,21 +13,19 @@ pub fn spawn_enemies(
 ) {
     let window = window_query.get_single().unwrap();
 
-    for _ in 0..NUMBER_OF_ENEMIES {
-        let random_x = random::<f32>() * window.width();
-        let random_y = random::<f32>() * window.height();
+    let random_x = random::<f32>() * window.width();
+    let random_y = random::<f32>() * window.height();
 
-        commands.spawn((
-            Transform::from_xyz(random_x, random_y, 0.0),
-            Sprite {
-                image: asset_server.load("sprites/ball_red_large.png"),
-                ..Default::default()
-            },
-            Enemy {
-                direction: Vec2::new(random::<f32>(), random::<f32>()).normalize(),
-            },
-        ));
-    }
+    commands.spawn((
+        Transform::from_xyz(random_x, random_y, 0.0),
+        Sprite {
+            image: asset_server.load("sprites/ball_red_large.png"),
+            ..Default::default()
+        },
+        Enemy {
+            direction: Vec2::new(random::<f32>(), random::<f32>()).normalize(),
+        },
+    ));
 }
 
 pub fn despawn_enemies(mut command: Commands, enemy_query: Query<Entity, With<Enemy>>) {
