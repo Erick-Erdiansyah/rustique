@@ -5,6 +5,10 @@ use bevy_egui::{EguiContexts, egui};
 
 use super::{
     components::{Printedtext, TextUI},
+    enemy::{
+        enemy_components::Enemy,
+        enemy_systems::{despawn_enemies, spawn_enemies},
+    },
     style::{sample_ui_style, text_sample_ui_style},
 };
 
@@ -35,16 +39,19 @@ pub fn floating_code_editor(mut contexts: EguiContexts, mut input: ResMut<CodeIn
 
 pub fn run_code(
     mut input: ResMut<CodeInput>,
-    writer: EventWriter<PrintEvent>,
+    writer_print: EventWriter<PrintEvent>,
+    writer_spawn: EventWriter<SpawnEvent>,
     mut commands: Commands,
     text_query: Query<Entity, With<TextUI>>,
+    enemy_query: Query<Entity, With<Enemy>>,
 ) {
     if input.run_requested {
         // despawn all entity before running the code
         for entity in text_query.iter() {
             commands.entity(entity).despawn_recursive();
         }
-        run(input.code.clone(), writer);
+        despawn_enemies(commands.reborrow(), enemy_query);
+        run(input.code.clone(), writer_print, writer_spawn, commands);
         input.run_requested = false;
     }
 }
@@ -52,6 +59,17 @@ pub fn run_code(
 pub fn handle_print_event(mut commands: Commands, mut events: EventReader<PrintEvent>) {
     for ev in events.read() {
         spawn_text(&mut commands, ev.message.clone());
+    }
+}
+
+pub fn handle_spawn_event(
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+    mut commands: Commands,
+    mut events: EventReader<SpawnEvent>,
+) {
+    if events.read().next().is_some() {
+        spawn_enemies(&mut commands, &window_query, &asset_server);
     }
 }
 

@@ -9,3 +9,5 @@ pub struct CodeInput {
 pub struct PrintEvent {
     pub message: String,
 }
+#[derive(Debug, Clone, Event)]
+pub struct SpawnEvent {}

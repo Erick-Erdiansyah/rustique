@@ -4660,6 +4660,7 @@ dependencies = [
  "bevy",
  "bevy_egui",
  "peg",
+ "rand",
 ]
 
 [[package]]

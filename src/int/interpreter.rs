@@ -1,10 +1,11 @@
 use std::collections::HashMap;
 
 use bevy::ecs::event::EventWriter;
+use bevy::ecs::system::Commands;
 
 use crate::int::lexeme::*;
 use crate::int::parser::interpreter_parser;
-use crate::ui::resources::PrintEvent;
+use crate::ui::resources::{PrintEvent, SpawnEvent};
 
 use super::native::build_native_fn_table;
 
@@ -23,7 +24,6 @@ impl Interpreter {
             functions: HashMap::new(),
         };
         for (name, func) in native_fns.iter() {
-            println!("Registering native fn: {}", name);
             interp.set_var(name.clone(), Value::Native(*func));
         }
         interp
@@ -76,7 +76,9 @@ impl Interpreter {
         &mut self,
         func: FunctionDef,
         arg_values: Vec<Value>,
-        writer: &mut EventWriter<PrintEvent>,
+        writer_print: &mut EventWriter<PrintEvent>,
+        writer_spawn: &mut EventWriter<SpawnEvent>,
+        commands: &mut Commands,
     ) -> Option<Value> {
         self.push_scope();
         // Bind parameters.
@@ -86,7 +88,7 @@ impl Interpreter {
         // Execute the function body.
         let mut ret_val = None;
         for s in &func.body {
-            if let Some(v) = self.eval_statement(s, writer) {
+            if let Some(v) = self.eval_statement(s, writer_print, writer_spawn, commands) {
                 ret_val = Some(v);
                 break;
             }
@@ -99,7 +101,9 @@ impl Interpreter {
     fn eval_statement(
         &mut self,
         stmt: &Statement,
-        writer: &mut EventWriter<PrintEvent>,
+        writer_print: &mut EventWriter<PrintEvent>,
+        writer_spawn: &mut EventWriter<SpawnEvent>,
+        commands: &mut Commands,
     ) -> Option<Value> {
         match stmt {
             Statement::VarDecl(var) => {
@@ -109,7 +113,7 @@ impl Interpreter {
             Statement::PrintExpr(expr) => {
                 if let Some(val) = self.eval_expr(expr) {
                     // send event to bevy
-                    writer.send(PrintEvent {
+                    writer_print.send(PrintEvent {
                         message: format!("{}", val),
                     });
                 } else {
@@ -127,7 +131,9 @@ impl Interpreter {
                     self.push_scope();
                     self.set_var(var_name.clone(), Value::Int(i));
                     for s in body {
-                        if let Some(ret_val) = self.eval_statement(s, writer) {
+                        if let Some(ret_val) =
+                            self.eval_statement(s, writer_print, writer_spawn, commands)
+                        {
                             self.pop_scope();
                             return Some(ret_val);
                         }
@@ -140,7 +146,9 @@ impl Interpreter {
                 // Continue while condition evaluates to true.
                 while let Some(Value::Bool(true)) = self.eval_expr(condition) {
                     for s in body {
-                        if let Some(ret_val) = self.eval_statement(s, writer) {
+                        if let Some(ret_val) =
+                            self.eval_statement(s, writer_print, writer_spawn, commands)
+                        {
                             return Some(ret_val);
                         }
                     }
@@ -174,12 +182,11 @@ impl Interpreter {
                 }
 
                 if let Some(Value::Native(func)) = self.get_var(name) {
-                    println!("Calling native fn: {}", name); // debug
-                    return func(arg_values, writer);
+                    return func(arg_values, writer_print, writer_spawn, commands);
                 }
 
                 if let Some(func) = self.functions.get(name).cloned() {
-                    self.eval_function_call(func, arg_values, writer)
+                    self.eval_function_call(func, arg_values, writer_print, writer_spawn, commands)
                 } else {
                     println!("Function '{}' not found!", name);
                     None
@@ -197,10 +204,16 @@ impl Interpreter {
         }
     }
 
-    fn eval_program(&mut self, stmts: &[Statement], writer: &mut EventWriter<PrintEvent>) {
+    fn eval_program(
+        &mut self,
+        stmts: &[Statement],
+        writer_print: &mut EventWriter<PrintEvent>,
+        writer_spawn: &mut EventWriter<SpawnEvent>,
+        commands: &mut Commands,
+    ) {
         for stmt in stmts {
-            if let Some(ret_val) = self.eval_statement(stmt, writer) {
-                writer.send(PrintEvent {
+            if let Some(ret_val) = self.eval_statement(stmt, writer_print, writer_spawn, commands) {
+                writer_print.send(PrintEvent {
                     message: format!("Returned : {}", ret_val),
                 });
             }
@@ -221,7 +234,12 @@ impl std::fmt::Display for Value {
     }
 }
 
-pub fn run(source: String, mut writer: EventWriter<PrintEvent>) {
+pub fn run(
+    source: String,
+    mut writer_print: EventWriter<PrintEvent>,
+    mut writer_spawn: EventWriter<SpawnEvent>,
+    mut commands: Commands,
+) {
     // test run using file with jw extension
 
     // let args: Vec<String> = env::args().collect();
@@ -244,7 +262,7 @@ pub fn run(source: String, mut writer: EventWriter<PrintEvent>) {
     let stmts = match interpreter_parser::program(&source) {
         Ok(result) => result,
         Err(e) => {
-            writer.send(PrintEvent {
+            writer_print.send(PrintEvent {
                 message: format!(" parse error : {:?}", e),
             });
             return;
@@ -252,5 +270,5 @@ pub fn run(source: String, mut writer: EventWriter<PrintEvent>) {
     };
 
     let mut interp = Interpreter::new();
-    interp.eval_program(&stmts, &mut writer);
+    interp.eval_program(&stmts, &mut writer_print, &mut writer_spawn, &mut commands);
 }

@@ -1,7 +1,12 @@
-use bevy::ecs::event::EventWriter;
-use crate::ui::resources::PrintEvent;
+use crate::ui::resources::{PrintEvent, SpawnEvent};
+use bevy::ecs::{event::EventWriter, system::Commands};
 
-pub type NativeFn = fn(Vec<Value>, &mut EventWriter<PrintEvent>) -> Option<Value>;
+pub type NativeFn = fn(
+    Vec<Value>,
+    &mut EventWriter<PrintEvent>,
+    &mut EventWriter<SpawnEvent>,
+    &mut Commands,
+) -> Option<Value>;
 
 #[derive(Clone)]
 pub enum Value {

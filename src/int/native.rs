@@ -1,20 +1,33 @@
 use crate::int::lexeme::{NativeFn, Value};
-use crate::ui::resources::PrintEvent;
-use bevy::ecs::event::EventWriter;
+use crate::ui::resources::{PrintEvent, SpawnEvent};
+use bevy::ecs::{event::EventWriter, system::Commands};
 use std::collections::HashMap;
 
-pub fn native_move_left(_args: Vec<Value>, writer: &mut EventWriter<PrintEvent>) -> Option<Value> {
-    println!("fucj");
-    writer.send(PrintEvent {
-      message: "moving left".to_string(),
-    });
-    println!("fucj after");
+#[macro_export]
+macro_rules! native {
+    ($name:ident) => {
+        $name
+            as fn(
+                Vec<Value>,
+                &mut EventWriter<PrintEvent>,
+                &mut EventWriter<SpawnEvent>,
+                &mut Commands,
+            ) -> Option<Value>
+    };
+}
+
+pub fn native_spawn_ball(
+    _args: Vec<Value>,
+    _print: &mut EventWriter<PrintEvent>,
+    spawn: &mut EventWriter<SpawnEvent>,
+    _commands: &mut Commands,
+) -> Option<Value> {
+    spawn.send(SpawnEvent {});
     None
 }
 
 pub fn build_native_fn_table() -> HashMap<String, NativeFn> {
-  let mut table = HashMap::new();
-  table.insert("move.left".to_string(), native_move_left as NativeFn);
-  println!("fucdsj");
+    let mut table = HashMap::new();
+    table.insert("spawn_ball".to_string(), native!(native_spawn_ball));
     table
 }
