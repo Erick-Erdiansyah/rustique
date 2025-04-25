@@ -22,10 +22,9 @@ pub fn spawn_camera(mut commands: Commands, windows_query: Query<&Window, With<P
 }
 
 pub fn floating_code_editor(mut contexts: EguiContexts, mut input: ResMut<CodeInput>) {
-    egui::Window::new("Code Box")
+    egui::Window::new("AUTO")
         .default_pos((20.0, 20.0))
         .show(contexts.ctx_mut(), |ui| {
-            ui.label("Enter code:");
             ui.add(
                 egui::TextEdit::multiline(&mut input.code)
                     .desired_width(f32::INFINITY)
